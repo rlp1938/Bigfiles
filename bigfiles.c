@@ -21,7 +21,7 @@
  *
  */
 
-#include "config.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -36,6 +36,9 @@
 char *helptext = "\n\tUsage: duplicates [option] dir_to_search\n"
   "\n\tOptions:\n"
   "\t-h outputs this help message.\n"
+  "\t-m, minimum size file to consider, an integer number optionally\n"
+  "\t\tsuffixed with K or M (case insenitive). Default is 1 byte.\n"
+  "\t-v, increase verbosity to a maximum level of 3. Default 0.\n"
   ;
 
 
@@ -43,12 +46,13 @@ void help_print(int forced);
 char *dostrdup(const char *s);
 FILE *dofopen(const char *path, const char *mode);
 void recursedir(char *headdir, FILE *fpo);
-
+int fcounter, verbosity;
+size_t minsize;
 
 
 int main(int argc, char **argv)
 {
-	int opt, result, verbosity;
+	int opt, result;
 	struct stat sb;
 	char *workfile0;
 	char *workfile1;
@@ -56,19 +60,41 @@ int main(int argc, char **argv)
 	FILE *fpo, *fpi;
 	char *topdir;
 	char line[PATH_MAX];
+	char *strminsize;
+	char multiplier;
 
 	// set default values
+	minsize = 1;
+	verbosity = 0;
+	fcounter = 0;
+	multiplier = '\0';
 
-	while((opt = getopt(argc, argv, ":hvdc:")) != -1) {
+	while((opt = getopt(argc, argv, ":hvm:")) != -1) {
+		char *cp;
 		switch(opt){
 		case 'h':
 			help_print(0);
 		break;
-		case 'd':
-			//keepworkfiles = 1;	// don't trash the workfiles at end
-		break;
-		case 'c':
-
+		case 'm':
+			strminsize = dostrdup(optarg);
+			minsize = atol(strminsize);
+			cp = strminsize;
+			while(*cp) {
+				if (isalpha(*cp)) {
+					multiplier = *cp;
+					switch (multiplier){
+						case 'k':
+						case 'K':
+						minsize *= 1024;
+						break;
+						case 'M':
+						case 'm':
+						minsize *= (1024 * 1024);
+						break;	// any other crap has no effect.
+					}
+				}
+				cp++;
+			}
 		break;
 		case 'v':
 			verbosity++;	// 4 levels of verbosity, 0-3. 0 no progress
@@ -162,31 +188,12 @@ void recursedir(char *headdir, FILE *fpo)
 	DIR *dirp;
 	struct dirent *de;
 
+
 	dirp = opendir(headdir);
 	if (!(dirp)) {
 		perror(headdir);
 		exit(EXIT_FAILURE);
 	}
-	/*
-	struct dirent {
-		ino_t          d_ino;       // inode number
-        off_t          d_off;       // not an offset; see NOTES
-        unsigned short d_reclen;    // length of this record
-        unsigned char  d_type;      // type of file; not supported
-                                    // by all filesystem types
-        char           d_name[256]; // filename
-	};
-
-	DT_BLK      This is a block device.
-    DT_CHR      This is a character device.
-    DT_DIR      This is a directory.
-    DT_FIFO     This is a named pipe (FIFO).
-    DT_LNK      This is a symbolic link.
-    DT_REG      This is a regular file.
-    DT_SOCK     This is a UNIX domain socket.
-    DT_UNKNOWN  The file type is unknown.
-
-	*/
 	while((de = readdir(dirp))) {
 		if (strcmp(de->d_name, "..") == 0) continue;
 		if (strcmp(de->d_name, ".") == 0) continue;
@@ -215,8 +222,25 @@ void recursedir(char *headdir, FILE *fpo)
 				perror(newpath);
 				break;
 			}
-
-			fprintf(fpo, "%lu %s\n", sb.st_size, newpath );
+			if (sb.st_size > minsize) {
+				fcounter++;
+				fprintf(fpo, "%lu %s\n", sb.st_size, newpath );
+				switch (verbosity) {
+					case 0:	// report nothing
+					break;
+					case 1:
+					if (fcounter % 100 == 0)
+						fprintf(stderr, "Processing: %s\n", newpath);
+					break;
+					case 2:
+					if (fcounter % 10 == 0)
+						fprintf(stderr, "Processing: %s\n", newpath);
+					break;
+					default:	// 3 or more, list everything
+					fprintf(stderr, "Processing: %s\n", newpath);
+					break;
+				} // switch (verbosity)
+			} // if (sb.st_size...)
 			break;
 			case DT_DIR:
 			// recurse using this pathname.
@@ -230,7 +254,6 @@ void recursedir(char *headdir, FILE *fpo)
 			fprintf(stderr, "Unknown type:\n%s/%s\n\n", headdir,
 					de->d_name);
 			break;
-
 		} // switch()
 	} // while
 	closedir(dirp);
