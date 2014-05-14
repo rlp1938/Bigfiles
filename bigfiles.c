@@ -31,6 +31,7 @@
 #include <string.h>
 #include <errno.h>
 #include <dirent.h>
+#include "config.h"
 
 char *helptext = "\n\tUsage: duplicates [option] dir_to_search\n"
   "\n\tOptions:\n"
@@ -42,6 +43,8 @@ void help_print(int forced);
 char *dostrdup(const char *s);
 FILE *dofopen(const char *path, const char *mode);
 void recursedir(char *headdir, FILE *fpo);
+
+
 
 int main(int argc, char **argv)
 {

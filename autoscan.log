@@ -1,0 +1,2 @@
+autoscan: warning: missing AC_CHECK_FUNCS([strchr]) wanted by: 
+	bigfiles.c:271
