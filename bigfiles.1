@@ -1,19 +1,34 @@
-.TH BIGFILES 1 "v\ 1.0.0" "Mon, May 12, 2014" "GNU"
+.TH BIGFILES 1 "v\ 1.0.0" "Mon, May 14, 2014" "GNU"
 .SH NAME
 .B bigfiles
-\- list files recursively in given directory in order of biggest to smallest.
-.SH SYNOPSIS
-bigfiles directory
+\- list files recursively in given directory in order of
 .br
-bigfiles -h
+biggest to smallest.
+.SH SYNOPSIS
+bigfiles [option] directory
 .br
 .SH OPTIONS
 -h Prints help information.
+.br
+-v Every time it's invoked verbosity increases up to 3. Above 3 is not
+.br
+ an error. Default is 0, no intermediate reporting.
+.br
+-m Set minimum file size using an integer followed by an optional
+.br
+modifier, k or m. NB not case sensitive. By default the minimum size is
+.br
+bigger than 1 byte so empty files will never be considered.
 .SH DESCRIPTION
+Starting with the user's specified directory, the program writes to a
+workfile the file size in bytes for the selected files followed by the
+.br
+pathname to that file. When complete the first work file is sorted in
+.br
+in reverse order into a second workfile which is then sent to stdout.
+.br
 
 .br
-.SH BUGS
-Does not handle dirs with embedded "'".
 .SH VERSION
 This documentation describes
 .B bigfiles
@@ -23,6 +38,4 @@ duplicates(1), brokensym(1)
 .br
 .SH AUTHOR
 .br
-.B Bob Parker
-.br
-.I \<\>
+.B Bob Parker <rlp1938@gmail.com>
