@@ -33,7 +33,8 @@
 #include <dirent.h>
 #include "config.h"
 
-char *helptext = "\n\tUsage: duplicates [option] dir_to_search\n"
+char *helptext = "\n\tUsage: duplicates [option] [dir_to_search]\n"
+  "\t\tBy default the dir to search is the users home dir.\n"
   "\n\tOptions:\n"
   "\t-h outputs this help message.\n"
   "\t-m, minimum size file to consider, an integer number optionally\n"
@@ -57,13 +58,14 @@ int main(int argc, char **argv)
 	char *workfile0;
 	char *workfile1;
 	char command[FILENAME_MAX];
+	char topdir[PATH_MAX];
 	FILE *fpo, *fpi;
-	char *topdir;
 	char line[PATH_MAX];
 	char *strminsize;
 	char multiplier;
 
 	// set default values
+    strcpy(topdir, getenv("HOME"));
 	minsize = 1;
 	verbosity = 0;
 	fcounter = 0;
@@ -115,20 +117,19 @@ int main(int argc, char **argv)
 	// now process the non-option arguments
 
 	// 1.Check that argv[???] exists.
-	if (!(argv[optind])) {
-		fprintf(stderr, "No directory provided\n");
-		help_print(1);
+	if ((argv[optind])) {
+		strcpy(topdir, argv[optind]);
 	}
 
 	// 2. Check that the dir exists.
-	if ((stat(argv[optind], &sb)) == -1){
-		perror(argv[optind]);
+	if ((stat(topdir, &sb)) == -1){
+		perror(topdir);
 		help_print(EXIT_FAILURE);
 	}
 
 	// 3. Check that this is a dir
 	if (!(S_ISDIR(sb.st_mode))) {
-		fprintf(stderr, "Not a directory: %s\n", argv[optind]);
+		fprintf(stderr, "Not a directory: %s\n", topdir);
 		help_print(EXIT_FAILURE);
 	}
 
@@ -139,7 +140,6 @@ int main(int argc, char **argv)
 	workfile1 = dostrdup(command);
 
 	// List the files
-	topdir = argv[optind];
 	{
 		// get rid of trailing '/'
 		int len = strlen(topdir);
