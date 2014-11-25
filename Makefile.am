@@ -3,4 +3,6 @@
 bin_PROGRAMS=bigfiles
 bigfiles_SOURCES=bigfiles.c
 
-man_MANS=bigfiles.1
+man_MANS=bigfiles.1 cleanuputils.1
+
+EXTRA_DIST= bigfiles.1 cleanuputils.1
